@@ -1,6 +1,6 @@
 ## Implementation notes
 
-The library was implemented using [Expression Templates][1]. Normally, temporary
+This library was implemented using [Expression Templates][1]. Normally, temporary
 objects are created to store the intermediary results of computed terms while
 evaluation of the expression is progressing.
 
@@ -10,10 +10,14 @@ For example:
 Matrix<int> res = a * b * c;
 ```
 
-First a*b is computed and the result is stored in a temporary. Then the temporary is multiplied by c to give the final result. Expression templates render temporaries unnecessary by evaluating the entire
-expression as a whole in one go. This is achieved by using generics to create
-expression tree-like structures during compile time which are then evaluated
-as one monolithic term. This can result in huge savings on memory and time, especially if we are dealing with objects of a significant size.
+First **a * b** is computed and the result is stored in a temporary. Then the
+temporary is multiplied by **c** to give the final result.
+
+Expression templates render temporaries unnecessary by evaluating the entire
+expression as a single term in one go. This is achieved by using generics to
+create [expression-tree][2] like structures during compile time which are then
+evaluated as one monolithic term. This can result in huge savings on memory and
+time, especially if we are dealing with objects of a significant size. 
 
 ## Compile:
 ```
@@ -70,3 +74,4 @@ std::cout << m << std::endl;
 ```
 
 [1]: https://en.wikipedia.org/wiki/Expression_templates
+[2]: https://en.wikipedia.org/wiki/Binary_expression_tree
