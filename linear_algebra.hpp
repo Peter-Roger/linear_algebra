@@ -87,7 +87,7 @@ namespace linear_algebra {
         }
 
         /*
-        * Constucts matrix from a matrix expression, forcing its evaluation.
+        * Constucts matrix from and matrix expression, forcing its evaluation.
         */
         template<typename E>
         Matrix(MatrixExpression<value_type, E> const& expr) {
@@ -179,10 +179,11 @@ namespace linear_algebra {
         template<typename T2, typename E>
         void copy(MatrixExpression<T2, E> const& expr) {
             resize_(expr.rows(), expr.cols());
+            // std::cout << expr.rows() << " " << expr.cols() << std::endl;
             for (size_t row = 0; row < this->rows(); ++row) {
                 for (size_t col = 0; col < this->cols(); ++col) {
                     data_[row * this->cols() + col] = static_cast<value_type>(expr(row, col));
-                }
+                } 
             }
         }
 
@@ -215,6 +216,159 @@ namespace linear_algebra {
     private:
         value_type* data_ = nullptr;
     };
+
+
+    /*
+    * Addition Expression Template.
+    *
+    * T the value type
+    * E1 the type of Expression of the left-hand operand.
+    * E2 the type of Expression of the right-hand operand.
+    */
+    template<typename T, typename E1, typename E2>
+    class Addition : public MatrixExpression<T, Addition<T, E1, E2>> {
+        typedef T value_type;
+        typedef E1 left_expr;
+        typedef E2 right_expr;
+
+        public:
+            Addition(left_expr const& left, right_expr const& right)
+            : left_operand(left), right_operand(right) {
+                check_dimensions(left_operand, right_operand);
+                this->set_dimension(left_operand.rows(), right_operand.cols());
+            }
+
+            value_type operator () (size_t row, size_t col) const {
+                return left_operand(row, col) + right_operand(row, col);
+            }
+
+        private:
+            left_expr const& left_operand;
+            right_expr const& right_operand;
+
+        /*
+        * Checks that matrix addition is defined for the left and
+        * right matrices.
+        *
+        * Throws a std::logic_error if matrix addition is undefined.
+        */
+        void check_dimensions(left_expr const& left_operand, right_expr const& right_operand) {
+            if (left_operand.rows() != right_operand.rows() ||
+                left_operand.cols() != right_operand.cols()) {
+                throw std::logic_error("Matrix addition is only defined " \
+                    "when the dimensions of the left-hand matrix is equal " \
+                    "to the dimensions of the right-hand matrix."); 
+            }
+        }
+    };
+
+    /*
+    * Matrix addition.
+    *
+    * T the value type
+    * E1 the type of Expression of the left-hand operand.
+    * E2 the type of Expression of the right-hand operand.
+    */
+    template<typename T, typename E1, typename E2>
+    Addition<T, MatrixExpression<T, E1>, MatrixExpression<T, E2>>
+    add(MatrixExpression<T, E1> const& left, MatrixExpression<T, E2> const& right) {
+        return Addition<T, MatrixExpression<T, E1>, MatrixExpression<T, E2>>(left, right);
+    }
+
+    /*
+    * Overload + operator for Multiplication Expression Template.
+    *
+    * E1 the type of Expression of the left-hand operand.
+    * E2 the type of Expression of the right-hand operand.
+    */
+    template<typename T, typename E1, typename E2>
+    Addition<T, MatrixExpression<T, E1>, MatrixExpression<T, E2>>
+    operator+(MatrixExpression<T, E1> const& left, MatrixExpression<T, E2> const& right) {
+        return Addition<T, MatrixExpression<T, E1>, MatrixExpression<T, E2>>(left, right);
+    }
+
+
+    /*
+    * Multiplication Expression Template.
+    *
+    * T the value type
+    * E1 the type of Expression of the left-hand operand.
+    * E2 the type of Expression of the right-hand operand.
+    */
+    template<typename T, typename E1, typename E2>
+    class Multiplication : public MatrixExpression<T, Multiplication<T, E1, E2>> {
+        typedef T value_type;
+        typedef E1 left_expr;
+        typedef E2 right_expr;
+
+    public:
+
+        Multiplication(left_expr const& left, right_expr const& right)
+        : left_operand(left), right_operand(right) {
+            check_dimensions(left_operand, right_operand);
+            this->set_dimension(left_operand.rows(), right_operand.cols());
+        }
+
+        /**
+        * Computes the dot-product of the row vector in the left operand
+        * specified by 'row' and the column vector in the right operand
+        * specified by 'col'.
+        *
+        * row the index of the row in the left operand
+        * col the index of the column in the right operand 
+        */
+        value_type operator () (size_t row, size_t col) const {
+            value_type dot_product = value_type();
+            for (size_t i = 0; i < left_operand.cols(); ++i) {
+                dot_product += left_operand(row, i) * right_operand(i, col);
+            }
+            return dot_product;
+        }
+
+    private:
+        left_expr const& left_operand;
+        right_expr const& right_operand;
+
+        /*
+        * Checks that matrix multiplication is defined for the left and
+        * right matrices.
+        *
+        * Throws a std::logic_error if matrix multiplication is undefined.
+        */
+        void check_dimensions(left_expr const& left_operand, right_expr const& right_operand) {
+            if (left_operand.cols() != right_operand.rows()) {
+                throw std::logic_error("Matrix multiplication is only defined " \
+                    "when the number of columns in the left-hand matrix is equal " \
+                    "to the number of rows in the right-hand matrix."); 
+            }
+        }
+
+    };
+
+    /*
+    * Matrix multiplication.
+    *
+    * T the value type
+    * E1 the type of Expression of the left-hand operand.
+    * E2 the type of Expression of the right-hand operand.
+    */
+    template<typename T, typename E1, typename E2>
+    Multiplication<T, MatrixExpression<T, E1>, MatrixExpression<T, E2>>
+    mult(MatrixExpression<T, E1> const& left, MatrixExpression<T, E2> const& right) {
+        return Multiplication<T, MatrixExpression<T, E1>, MatrixExpression<T, E2>>(left, right);
+    }
+
+    /*
+    * Overload * operator for Multiplication Expression Template.
+    *
+    * E1 the type of Expression of the left-hand operand.
+    * E2 the type of Expression of the right-hand operand.
+    */
+    template<typename T, typename E1, typename E2>
+    Multiplication<T, MatrixExpression<T, E1>, MatrixExpression<T, E2>>
+    operator*(MatrixExpression<T, E1> const& left, MatrixExpression<T, E2> const& right) {
+        return Multiplication<T, MatrixExpression<T, E1>, MatrixExpression<T, E2>>(left, right);
+    }
 
     /*
     * Transpose Expression Template.
@@ -250,87 +404,5 @@ namespace linear_algebra {
     template<typename T, typename E>
     Transpose<T, MatrixExpression<T, E>> trans(MatrixExpression<T, E> const& operand) {
         return Transpose<T, MatrixExpression<T, E>>(operand);
-    }
-
-    /*
-    * Multiplication Expression Template.
-    *
-    * T the value type
-    * E1 the type of Expression of the left-hand operand.
-    * E2 the type of Expression of the right-hand operand.
-    */
-    template<typename T, typename E1, typename E2>
-    class Multiplication : public MatrixExpression<T, Multiplication<T, E1, E2>> {
-        typedef T value_type;
-        typedef E1 left_expr;
-        typedef E2 right_expr;
-
-    public:
-
-        Multiplication(left_expr const& left, right_expr const& right)
-        : left_operand(left), right_operand(right) {
-            check_dimensions(left_operand, right_operand);
-            this->set_dimension(left_operand.rows(), right_operand.cols());
-        }
-
-        /**
-        * Computes the dot-product of the row vector in the left operand
-        * specified by 'row' and the column vector in the right operand
-        * specified by 'col'.
-        *
-        * row the index of the row in the left operand
-        * col the index of the column in the right operand
-        */
-        value_type operator () (size_t row, size_t col) const {
-            value_type dot_product = value_type();
-            for (size_t i = 0; i < left_operand.cols(); ++i) {
-                dot_product += left_operand(row, i) * right_operand(i, col);
-            }
-            return dot_product;
-        }
-
-    private:
-        left_expr const& left_operand;
-        right_expr const& right_operand;
-
-        /*
-        * Checks that matrix multiplication is defined for the left and
-        * right matrices.
-        *
-        * Throws a std::logic_error if matrix multiplication is undefined.
-        */
-        void check_dimensions(left_expr const& left_operand, right_expr const& right_operand) {
-            if (left_operand.cols() != right_operand.rows()) {
-                throw std::logic_error("Matrix multiplication is only defined " \
-                    "when the number of columns in the left-hand matrix is equal " \
-                    "to the number of rows in the right-hand matrix.");
-            }
-        }
-
-    };
-
-    /*
-    * Matrix multiplication.
-    *
-    * T the value type
-    * E1 the type of Expression of the left-hand operand.
-    * E2 the type of Expression of the right-hand operand.
-    */
-    template<typename T, typename E1, typename E2>
-    Multiplication<T, MatrixExpression<T, E1>, MatrixExpression<T, E2>>
-    mult(MatrixExpression<T, E1> const& left, MatrixExpression<T, E2> const& right) {
-        return Multiplication<T, MatrixExpression<T, E1>, MatrixExpression<T, E2>>(left, right);
-    }
-
-    /*
-    * Overload * operator for Multiplication Expression Template.
-    *
-    * E1 the type of Expression of the left-hand operand.
-    * E2 the type of Expression of the right-hand operand.
-    */
-    template<typename T, typename E1, typename E2>
-    Multiplication<T, MatrixExpression<T, E1>, MatrixExpression<T, E2>>
-    operator*(MatrixExpression<T, E1> const& left, MatrixExpression<T, E2> const& right) {
-        return Multiplication<T, MatrixExpression<T, E1>, MatrixExpression<T, E2>>(left, right);
     }
 }

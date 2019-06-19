@@ -1,12 +1,16 @@
 CC=g++
 CFLAGS=-std=c++11
 
-prog: main.o tests
-	$(CC) -o $@ $(CFLAGS) main.o
+.PHONY: run
+run: main.o linear_algebra.hpp prog tests
 	./tests
+	./prog
 
-tests: tests.o
-	$(CC) -o $@ $(CFLAGS) $^
+prog: main.o linear_algebra.hpp tests
+	$(CC) $(CFLAGS) -g -o $@ main.o linear_algebra.hpp
+
+tests: tests.o linear_algebra.hpp
+	$(CC) $(CFLAGS) -g -o $@ $^
 
 main.o:
 	$(CC) $(CFLAGS) -c main.cpp

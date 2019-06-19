@@ -13,6 +13,7 @@ public:
 
     void run() {
         std::cout << "Running tests:" << std::endl;
+        // matrix
         test_dft_ctor();
         test_std_ctor();
         test_cpy_ctor();
@@ -21,16 +22,21 @@ public:
         test_cpy_asnmt_op();
         test_call_out_of_bounds();
         test_set();
-        test_transpose_NxN();
+        test_dft_ctor();
+        // add
+        test_add_op_NxN();
+        test_add_invalid_dimensions();
+        // mult
         test_mult_NxN();
-        test_transpose_NxM();
-        test_nested_transpose_NxM();
         test_mult_NxN();
         test_mult_NxM();
         test_mult_3_terms();
+        // trans
         test_trans_mult_3_terms();
         test_trans_matrix_mult();
-        test_dft_ctor();
+        test_transpose_NxN();
+        test_transpose_NxM();
+        test_nested_transpose_NxM();
         if (all_cases_passed) {
             std::cout << std::endl << "All test cases passed." << std::endl;
         } else {
@@ -115,54 +121,46 @@ public:
         test(condition, prompt);
     }
 
-    //-------------------- TEST MATRIX OPERATIONS --------------------
+    //-------------------- TEST MATRIX ADDITION --------------------------
 
-    void test_transpose_NxN() {
+        void test_add_op_NxN() {
         std::string prompt = __func__;
-        int n = 10;
-        Matrix<int> m1(n,n);
-        random_int_fill(m1);
-        Matrix<int> t = trans(m1);
-        bool condition = true;
-        for (int i = 0; i < n; ++i) {
-            for (int j = 0; j < n; ++j) {
-                condition = t(i, j) == m1(j, i);
-                if (!(condition)) {
-                    break;
-                }
-            }
+        Matrix<int> expected({{1,2,3},
+                              {9,15,8},
+                              {9,9,15}});
+
+        Matrix<int> m1({{0,1,2},
+                        {5,10,6},
+                        {7,8,9}});
+
+        Matrix<int> m2({{1,1,1},
+                        {4,5,2},
+                        {2,1,6}});
+
+        Matrix<int> res = m1 + m2;
+        bool condition = matrix_equal(res, expected);
+        test(condition, prompt);
+    }
+
+    void test_add_invalid_dimensions() {
+        std::string prompt = __func__;
+        Matrix<int> m1({{1,2},{3,4}});
+
+        Matrix<int> m2({{0,1,2},
+                        {5,10,6},
+                        {7,8,9}});
+        bool condition;
+        try {
+            Matrix<int> res = m1 + m2;
+            condition = false;
+        } catch (const std::logic_error &e) {
+            condition = true;
         }
         test(condition, prompt);
     }
 
-    void test_transpose_NxM() {
-        std::string prompt = __func__;
-        int n = 10, m = 15;
-        Matrix<int> m1(n, m);
-        random_int_fill(m1);
-        Matrix<int> t = trans(m1);
-        bool condition = true;
-        for (int i = 0; i < m; ++i) {
-            for (int j = 0; j < n; ++j) {
-                condition = t(i, j) == m1(j, i);
-                if (!(condition)) {
-                    break;
-                }
-            }
-        }
-        test(condition, prompt);
-    }
+    //-------------------- TEST MATRIX MULTIPLICATION --------------------
 
-    void test_nested_transpose_NxM() {
-        std::string prompt = __func__;
-        int n = 2, m = 5;
-        Matrix<int> m1(n, m);
-        random_int_fill(m1);
-        Matrix<int> t = trans(m1);
-        Matrix<int> tt = trans(trans(m1));
-        bool condition = matrix_equal(tt, m1);
-        test(condition, prompt);
-    }
 
     void test_mult_op_NxN() {
         std::string prompt = __func__;
@@ -283,6 +281,55 @@ public:
         test(condition, prompt);
     }
 
+    //-------------------- TEST MATRIX TRANSPOSE --------------------
+
+    void test_transpose_NxN() {
+        std::string prompt = __func__;
+        int n = 10;
+        Matrix<int> m1(n,n);
+        random_int_fill(m1);
+        Matrix<int> t = trans(m1);
+        bool condition = true;
+        for (int i = 0; i < n; ++i) {
+            for (int j = 0; j < n; ++j) {
+                condition = t(i, j) == m1(j, i);
+                if (!(condition)) {
+                    break;
+                }
+            }
+        }
+        test(condition, prompt);
+    }
+
+    void test_transpose_NxM() {
+        std::string prompt = __func__;
+        int n = 10, m = 15;
+        Matrix<int> m1(n, m);
+        random_int_fill(m1);
+        Matrix<int> t = trans(m1);
+        bool condition = true;
+        for (int i = 0; i < m; ++i) {
+            for (int j = 0; j < n; ++j) {
+                condition = t(i, j) == m1(j, i);
+                if (!(condition)) {
+                    break;
+                }
+            }
+        }
+        test(condition, prompt);
+    }
+
+    void test_nested_transpose_NxM() {
+        std::string prompt = __func__;
+        int n = 2, m = 5;
+        Matrix<int> m1(n, m);
+        random_int_fill(m1);
+        Matrix<int> t = trans(m1);
+        Matrix<int> tt = trans(trans(m1));
+        bool condition = matrix_equal(tt, m1);
+        test(condition, prompt);
+    }
+
 protected:
 
     void test(bool condition, const std::string& prompt) {
@@ -314,7 +361,7 @@ protected:
     void random_int_fill(Matrix<int> &matrix) {
         std::random_device rd;
         std::mt19937 gen(rd());
-        std::uniform_int_distribution<int> uni_dist(-99, 99);
+        std::uniform_int_distribution<int> uni_dist(-9, 9);
 
         for (int i = 0; i < matrix.rows(); i++) {
             for (int j = 0; j < matrix.cols(); j++) {
